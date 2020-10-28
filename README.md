@@ -24,9 +24,5 @@ bundle install
 
 Release the bot!
 ```
-ruby script.rb
+ruby lambda_function.rb
 ```
-
-# debug
-
-If the script's success check fails it will output the current page's html to debugger.html. You should be able to load that file in your local browser to see what went wrong.

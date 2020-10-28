@@ -1,1 +1,4 @@
 debugger.html
+vendor/*
+.bundle/*
+*.zip
