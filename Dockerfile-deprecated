@@ -1,0 +1,80 @@
+FROM ruby:2.6.3
+
+# throw errors if Gemfile in the docker image has been modified since Gemfile.lock
+RUN bundle config --global frozen 1
+
+# install some standard stuff
+RUN apt-get -y update
+RUN apt-get -y install sudo
+RUN apt-get -y install dialog apt-utils
+RUN apt-get -y install curl
+RUN apt-get -y install build-essential
+RUN apt-get -y install manpages-dev
+RUN apt-get -y install wget
+
+# install chrome dependencies
+RUN apt-get install -y gconf-service libasound2 libatk1.0-0 libcairo2 libcups2 libfontconfig1 libgdk-pixbuf2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libxss1 fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils
+
+# install chromedriver dependencies
+RUN apt-get install -y unzip xvfb libxi6 libgconf-2-4
+RUN apt-get install -y default-jdk 
+
+# install chrome
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+RUN dpkg -i google-chrome-stable_current_amd64.deb; apt-get -fy install
+
+# install chromedriver
+# RUN wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip; unzip chromedriver_linux64.zip
+RUN CHROME_DRIVER_VERSION=`curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE`; wget -N https://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip -P ~/
+RUN unzip ~/chromedriver_linux64.zip -d ~/
+RUN rm ~/chromedriver_linux64.zip
+RUN mv -f ~/chromedriver /usr/local/bin/chromedriver
+RUN chown root:root /usr/local/bin/chromedriver
+RUN chmod 0755 /usr/local/bin/chromedriver
+
+# configure chromedriver
+# RUN mv chromedriver /usr/bin/chromedriver
+# RUN chown root:root /usr/bin/chromedriver
+# RUN chmod +x /usr/bin/chromedriver
+
+# install selenium server
+# RUN wget https://selenium-release.storage.googleapis.com/3.13/selenium-server-standalone-3.13.0.jar
+# RUN wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip; unzip testng-6.8.7.jar.zip
+RUN SELENIUM_STANDALONE_VERSION=3.141.59; SELENIUM_SUBDIR=$(echo "$SELENIUM_STANDALONE_VERSION" | cut -d"." -f-2); wget -N https://selenium-release.storage.googleapis.com/$SELENIUM_SUBDIR/selenium-server-standalone-$SELENIUM_STANDALONE_VERSION.jar -P ~/; mv -f ~/selenium-server-standalone-$SELENIUM_STANDALONE_VERSION.jar /usr/local/bin/selenium-server-standalone.jar
+RUN chown root:root /usr/local/bin/selenium-server-standalone.jar
+RUN chmod 0755 /usr/local/bin/selenium-server-standalone.jar
+
+# run selenium server
+# RUN xvfb-run java -Dwebdriver.chrome.driver=/usr/bin/chromedriver -jar selenium-server-standalone.jar
+# RUN xvfb-run java -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver -jar /usr/local/bin/selenium-server-standalone.jar
+
+# install glpk version 4.44
+# RUN apt-get -y install gnupg
+# RUN wget ftp://ftp.gnu.org/gnu/glpk/glpk-4.44.tar.gz
+# RUN wget ftp://ftp.gnu.org/gnu/glpk/glpk-4.44.tar.gz.sig
+# RUN gpg --keyserver keys.gnupg.net --recv-keys 5981E818
+# RUN gpg --verify glpk-4.44.tar.gz.sig glpk-4.44.tar.gz
+# RUN tar -xzvf glpk-4.44.tar.gz
+
+# configure and finalize glpk
+# RUN cd glpk-4.44 && ./configure && make check && examples/glpsol --version
+# RUN cd glpk-4.44 && make uninstall
+# RUN cd glpk-4.44 && make install
+# RUN which glpsol
+
+# do ruby things
+RUN gem install bundler
+
+# now get the gemfile from our app directory
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+# copy the rest of our app
+COPY script.rb .
+
+# let's see what version of chrome we have
+RUN google-chrome --version
+
+# run the script!
+# RUN ruby script.rb
+RUN bundle exec ruby script.rb
